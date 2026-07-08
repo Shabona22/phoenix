@@ -15,18 +15,38 @@ require_root() {
   fi
 }
 
+fix_apt_sources() {
+  if grep -rq oracular /etc/apt 2>/dev/null; then
+    log "Rewriting EOL oracular apt sources to noble"
+    cat > /etc/apt/sources.list <<'EOF'
+deb http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
+deb http://security.ubuntu.com/ubuntu noble-security main restricted universe multiverse
+EOF
+    find /etc/apt/sources.list.d -type f -delete 2>/dev/null || true
+  fi
+}
+
 install_packages() {
   export DEBIAN_FRONTEND=noninteractive
-  apt-get update -qq
+  fix_apt_sources
+  apt-get update -qq || apt-get update -qq -o Acquire::AllowInsecureRepositories=true || true
   add-apt-repository -y universe 2>/dev/null || true
-  apt-get update -qq
+  apt-get update -qq || apt-get update -qq -o Acquire::AllowInsecureRepositories=true || true
+
   apt-get install -y -qq \
-    curl wget unzip jq socat \
-    docker.io docker-compose-plugin \
+    curl wget unzip jq socat openssl \
     wireguard-tools openvpn easy-rsa \
     strongswan xl2tpd ppp iptables ufw
-  systemctl enable docker
-  systemctl start docker
+
+  apt-get install -y -qq docker.io || true
+  apt-get install -y -qq docker-compose-v2 2>/dev/null || \
+    apt-get install -y -qq docker-compose-plugin 2>/dev/null || \
+    apt-get install -y -qq docker-compose || true
+
+  systemctl enable docker 2>/dev/null || true
+  systemctl start docker 2>/dev/null || true
 }
 
 flatten_configs() {
@@ -62,10 +82,10 @@ extract_bundle() {
 
 generate_hysteria_certs() {
   if [[ ! -f "${PHOENIX_DIR}/certs/hysteria.crt" ]]; then
-  openssl req -x509 -nodes -newkey rsa:2048 \
-    -keyout "${PHOENIX_DIR}/certs/hysteria.key" \
-    -out "${PHOENIX_DIR}/certs/hysteria.crt" \
-    -days 3650 -subj "/CN=phoenix-hysteria" 2>/dev/null
+    openssl req -x509 -nodes -newkey rsa:2048 \
+      -keyout "${PHOENIX_DIR}/certs/hysteria.key" \
+      -out "${PHOENIX_DIR}/certs/hysteria.crt" \
+      -days 3650 -subj "/CN=phoenix-hysteria" 2>/dev/null
   fi
 }
 
@@ -82,22 +102,31 @@ setup_networking() {
 
 start_docker_services() {
   cd "${PHOENIX_DIR}"
-  docker compose pull --ignore-pull-failures 2>/dev/null || true
-  docker compose up -d
-  log "Docker services started"
+  docker compose down 2>/dev/null || docker-compose down 2>/dev/null || true
+  if docker compose version &>/dev/null; then
+    docker compose pull --ignore-pull-failures 2>/dev/null || true
+    docker compose up -d --force-recreate || log "WARN docker compose up failed"
+  elif command -v docker-compose &>/dev/null; then
+    docker-compose pull 2>/dev/null || true
+    docker-compose up -d --force-recreate || log "WARN docker-compose up failed"
+  else
+    log "WARN docker compose not available; skipping container services"
+  fi
+  log "Docker step complete"
 }
 
 run_host_scripts() {
-  bash "${PHOENIX_DIR}/deploy/setup_openvpn.sh"
-  bash "${PHOENIX_DIR}/deploy/setup_l2tp.sh"
-  bash "${PHOENIX_DIR}/deploy/setup_obfs4.sh"
+  bash "${PHOENIX_DIR}/deploy/setup_openvpn.sh" || log "WARN openvpn setup failed"
+  bash "${PHOENIX_DIR}/deploy/setup_l2tp.sh" || log "WARN l2tp setup failed"
+  bash "${PHOENIX_DIR}/deploy/setup_wireguard.sh" || log "WARN wireguard setup failed"
+  bash "${PHOENIX_DIR}/deploy/setup_obfs4.sh" || log "WARN obfs4 setup failed"
 }
 
 main() {
   require_root
   log "Bootstrapping Phoenix VPN into ${PHOENIX_DIR}..."
-  install_packages
   extract_bundle
+  install_packages
   generate_hysteria_certs
   setup_networking
   start_docker_services

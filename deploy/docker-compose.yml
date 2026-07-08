@@ -8,7 +8,8 @@ services:
     network_mode: host
     volumes:
       - /opt/phoenix/configs/xray:/etc/xray:ro
-    command: run -c /etc/xray/config.json
+    entrypoint: ["/usr/bin/xray"]
+    command: ["-c", "/etc/xray/config.json"]
 
   hysteria:
     image: tobyxdd/hysteria:latest
@@ -18,7 +19,8 @@ services:
     volumes:
       - /opt/phoenix/configs/hysteria:/etc/hysteria:ro
       - /opt/phoenix/certs:/opt/phoenix/certs:ro
-    command: server -c /etc/hysteria/config.yaml
+    entrypoint: ["hysteria"]
+    command: ["server", "-c", "/etc/hysteria/config.yaml"]
 
   shadowsocks:
     image: shadowsocks/shadowsocks-libev:latest

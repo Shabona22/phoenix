@@ -30,7 +30,7 @@ class BootstrapEmbedded:
                 if not isinstance(data, dict):
                     continue
                 cfg = data.get("config", data)
-                zf.writestr(f"configs/{proto}/config.json", json.dumps(cfg, indent=2))
+                zf.writestr(f"configs/{proto}/schema.json", json.dumps(cfg, indent=2))
                 if "client_config" in data:
                     ext = "conf" if proto in ("openvpn", "wireguard") else "txt"
                     zf.writestr(f"configs/{proto}/client.{ext}", data["client_config"])

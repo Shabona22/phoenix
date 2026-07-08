@@ -9,7 +9,7 @@ class HysteriaConfig(ProtocolBase):
 
     def generate_config(self, server_ip: str, port: int = None, **kwargs) -> Dict[str, Any]:
         if not port:
-            port = self._generate_random_port(10000, 65000)
+            port = kwargs.get("server_port", 8443)
         return {
             "protocol": "hysteria",
             "server": {"ip": server_ip, "port": port, "proto": "udp"},

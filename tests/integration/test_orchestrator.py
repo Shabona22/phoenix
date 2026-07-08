@@ -143,7 +143,7 @@ def test_config_generator_writes_files(tmp_path):
     configs = gen.generate_for_node(node, protocols=["openvpn", "shadowsocks"])
     assert "openvpn" in configs
     assert "shadowsocks" in configs
-    assert (tmp_path / "configs" / "openvpn" / "vm-test-001" / "config.json").exists()
+    assert (tmp_path / "configs" / "openvpn" / "vm-test-001" / "schema.json").exists()
     assert (tmp_path / "configs" / "openvpn" / "vm-test-001" / "server.conf").exists()
     assert (tmp_path / "configs" / "shadowsocks" / "vm-test-001" / "config.json").exists()
 

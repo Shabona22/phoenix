@@ -4,6 +4,24 @@ set -euo pipefail
 PHOENIX_DIR="${PHOENIX_DIR:-/opt/phoenix}"
 PORTS=(1080 8443 51820 1194 1701 4500)
 
+read_config_port() {
+  local proto="$1" key="$2" fallback="$3"
+  local schema="${PHOENIX_DIR}/configs/${proto}/schema.json"
+  if [[ -f "${schema}" ]] && command -v jq &>/dev/null; then
+    local val
+    val="$(jq -r "${key} // empty" "${schema}" 2>/dev/null || true)"
+    if [[ -n "${val}" && "${val}" != "null" ]]; then
+      echo "${val}"
+      return 0
+    fi
+  fi
+  echo "${fallback}"
+}
+
+HYSTERIA_PORT="$(read_config_port hysteria '.server.port' 8443)"
+WG_PORT="$(read_config_port wireguard '.server.port' 51820)"
+PORTS=(1080 "${HYSTERIA_PORT}" "${WG_PORT}" 1194 1701 4500)
+
 echo "[phoenix] Health check starting..."
 
 for port in "${PORTS[@]}"; do

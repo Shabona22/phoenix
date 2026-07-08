@@ -26,7 +26,8 @@ generate_pki() {
     make-cadir "${EASYRSA}" 2>/dev/null || cp -r /usr/share/easy-rsa "${EASYRSA}"
   fi
   cd "${EASYRSA}"
-  ./easyrsa init-pki 2>/dev/null || true
+  rm -rf pki
+  EASYRSA_BATCH=1 ./easyrsa init-pki 2>/dev/null || true
   EASYRSA_BATCH=1 ./easyrsa build-ca nopass 2>/dev/null || true
   EASYRSA_BATCH=1 ./easyrsa gen-dh 2>/dev/null || true
   EASYRSA_BATCH=1 ./easyrsa build-server-full server nopass 2>/dev/null || true

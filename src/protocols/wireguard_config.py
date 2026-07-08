@@ -11,7 +11,7 @@ class WireGuardConfig(ProtocolBase):
 
     def generate_config(self, server_ip: str, port: int = None, **kwargs) -> Dict[str, Any]:
         if not port:
-            port = self._generate_random_port(40000, 60000)
+            port = kwargs.get("server_port", 51820)
         server_priv, server_pub = generate_wireguard_keypair()
         client_priv, client_pub = generate_wireguard_keypair()
         return {

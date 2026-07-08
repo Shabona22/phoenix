@@ -73,7 +73,7 @@ class ConfigGenerator:
     ) -> None:
         dest = self.output_dir / protocol / node_id
         dest.mkdir(parents=True, exist_ok=True)
-        (dest / "config.json").write_text(json.dumps(config, indent=2))
+        (dest / "schema.json").write_text(json.dumps(config, indent=2))
 
         client_ext = "conf" if protocol in ("openvpn", "wireguard") else "txt"
         (dest / f"client.{client_ext}").write_text(client_config)

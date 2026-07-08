@@ -12,7 +12,7 @@ class OpenVPNConfig(ProtocolBase):
 
     def generate_config(self, server_ip: str, port: int = None, **kwargs) -> Dict[str, Any]:
         if not port:
-            port = self._generate_random_port(8000, 65000)
+            port = kwargs.get("server_port", 1194)
         return {
             "protocol": "openvpn",
             "server": {"ip": server_ip, "port": port, "proto": "tcp"},
