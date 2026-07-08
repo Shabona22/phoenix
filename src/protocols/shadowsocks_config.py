@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict
 
 from .base import ProtocolBase
@@ -24,3 +25,17 @@ class ShadowsocksConfig(ProtocolBase):
     def generate_client_config(self, config: Dict[str, Any]) -> str:
         return f"""{config['cipher']}:{config['password']}@{config['server']['ip']}:{config['server']['port']}
 """
+
+    def generate_server_config(self, config: Dict[str, Any]) -> str:
+        server_cfg: Dict[str, Any] = {
+            "server": "0.0.0.0",
+            "server_port": config["server"]["port"],
+            "password": config["password"],
+            "method": config["cipher"],
+            "mode": "tcp_and_udp",
+            "timeout": 300,
+        }
+        if config.get("plugin"):
+            server_cfg["plugin"] = config["plugin"]
+            server_cfg["plugin_opts"] = config.get("plugin_opts", "")
+        return json.dumps(server_cfg, indent=2)

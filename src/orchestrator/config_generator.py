@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from orchestrator.node_manager import Node
 from protocols.hysteria_config import HysteriaConfig
@@ -26,6 +26,15 @@ class ConfigGenerator:
         "hysteria": HysteriaConfig,
     }
 
+    SERVER_FILES: Dict[str, Tuple[str, str]] = {
+        "xray": ("config.json", "json"),
+        "shadowsocks": ("config.json", "json"),
+        "hysteria": ("config.yaml", "yaml"),
+        "wireguard": ("wg0.conf", "conf"),
+        "openvpn": ("server.conf", "conf"),
+        "l2tp": ("l2tp_bundle.conf", "conf"),
+    }
+
     def __init__(self, output_dir: Optional[str] = None):
         self.output_dir = Path(output_dir or os.getenv("PHOENIX_OUTPUT_DIR", "phoenix-output")) / "configs"
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -44,11 +53,13 @@ class ConfigGenerator:
             generator = cls()
             config = generator.generate_config(server_ip=node.ip)
             client_config = generator.generate_client_config(config)
+            server_config = generator.generate_server_config(config)
             results[proto_name] = {
                 "config": config,
                 "client_config": client_config,
+                "server_config": server_config,
             }
-            self._write_config(node.node_id, proto_name, config, client_config)
+            self._write_config(node.node_id, proto_name, config, client_config, server_config)
 
         return results
 
@@ -58,12 +69,17 @@ class ConfigGenerator:
         protocol: str,
         config: Dict[str, Any],
         client_config: str,
+        server_config: str,
     ) -> None:
         dest = self.output_dir / protocol / node_id
         dest.mkdir(parents=True, exist_ok=True)
         (dest / "config.json").write_text(json.dumps(config, indent=2))
-        ext = "conf" if protocol in ("openvpn", "wireguard") else "txt"
-        (dest / f"client.{ext}").write_text(client_config)
+
+        client_ext = "conf" if protocol in ("openvpn", "wireguard") else "txt"
+        (dest / f"client.{client_ext}").write_text(client_config)
+
+        server_name, _ = self.SERVER_FILES.get(protocol, ("server.conf", "conf"))
+        (dest / server_name).write_text(server_config)
 
     def generate_all(self, nodes: List[Node]) -> Dict[str, Dict[str, Any]]:
         all_configs: Dict[str, Dict[str, Any]] = {}

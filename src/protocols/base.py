@@ -19,6 +19,9 @@ class ProtocolBase(ABC):
     def generate_client_config(self, config: Dict[str, Any]) -> str:
         pass
 
+    def generate_server_config(self, config: Dict[str, Any]) -> str:
+        raise NotImplementedError(f"{self.name} server config not implemented")
+
     def _generate_password(self, length: int = 16) -> str:
         alphabet = string.ascii_letters + string.digits
         return "".join(secrets.choice(alphabet) for _ in range(length))

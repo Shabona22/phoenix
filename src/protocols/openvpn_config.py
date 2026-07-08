@@ -26,10 +26,22 @@ class OpenVPNConfig(ProtocolBase):
                 "enabled": True,
                 "method": "obfs4",
                 "param": secrets.token_hex(16),
+                "local_port": 1080,
             },
             "auth": {
                 "username": kwargs.get("username", self._generate_password(12)),
                 "password": kwargs.get("password", self._generate_password(20)),
+            },
+            "network": {
+                "server_network": "10.8.0.0",
+                "netmask": "255.255.255.0",
+            },
+            "paths": {
+                "ca": "/opt/phoenix/openvpn/ca.crt",
+                "cert": "/opt/phoenix/openvpn/server.crt",
+                "key": "/opt/phoenix/openvpn/server.key",
+                "dh": "/opt/phoenix/openvpn/dh.pem",
+                "tls_crypt": "/opt/phoenix/openvpn/tls-crypt-v2.key",
             },
         }
 
@@ -41,9 +53,33 @@ remote {config['server']['ip']} {config['server']['port']}
 cipher AES-256-GCM
 auth SHA256
 tls-version-min 1.3
-tls-crypt-v2
-obfsproxy obfs4 127.0.0.1:1080
+tls-crypt-v2 {config['paths']['tls_crypt']}
+remote-cert-tls server
+verb 3
 <ca>
-{config.get('ca_cert', '')}
+# populated by bootstrap from {config['paths']['ca']}
 </ca>
+"""
+
+    def generate_server_config(self, config: Dict[str, Any]) -> str:
+        paths = config["paths"]
+        net = config["network"]
+        return f"""port {config['server']['port']}
+proto tcp
+dev tun
+ca {paths['ca']}
+cert {paths['cert']}
+key {paths['key']}
+dh {paths['dh']}
+tls-crypt-v2 {paths['tls_crypt']}
+server {net['server_network']} {net['netmask']}
+topology subnet
+cipher AES-256-GCM
+auth SHA256
+tls-version-min 1.3
+keepalive 10 120
+persist-key
+persist-tun
+verb 3
+explicit-exit-notify 0
 """

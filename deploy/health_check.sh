@@ -7,19 +7,31 @@ PORTS=(1080 8443 51820 1194 1701 4500)
 echo "[phoenix] Health check starting..."
 
 for port in "${PORTS[@]}"; do
-  if ss -tln | grep -q ":${port} "; then
+  if ss -tln 2>/dev/null | grep -q ":${port} " || ss -uln 2>/dev/null | grep -q ":${port} "; then
     echo "OK  port ${port} listening"
   else
     echo "WARN port ${port} not listening"
   fi
 done
 
+for svc in phoenix-obfs4 openvpn-server@server openvpn@server strongswan-starter xl2tpd; do
+  if systemctl is-active --quiet "${svc}" 2>/dev/null; then
+    echo "OK  systemd ${svc} active"
+  fi
+done
+
 if command -v docker &>/dev/null; then
-  docker ps --format '{{.Names}}: {{.Status}}' || true
+  docker ps --format '{{.Names}}: {{.Status}}' 2>/dev/null | grep phoenix || echo "WARN no phoenix docker containers"
 fi
 
-if [ -f "${PHOENIX_DIR}/configs/manifest.json" ]; then
-  echo "OK  configs present"
+if systemctl is-active --quiet phoenix-obfs4 2>/dev/null; then
+  echo "OK  obfs4proxy service active"
+else
+  echo "WARN obfs4proxy service not active"
+fi
+
+if [[ -f "${PHOENIX_DIR}/configs/manifest.json" ]] || [[ -d "${PHOENIX_DIR}/configs/xray" ]]; then
+  echo "OK  configs present under ${PHOENIX_DIR}/configs"
 else
   echo "WARN configs missing"
 fi

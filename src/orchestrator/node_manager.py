@@ -2,10 +2,25 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from orchestrator.api_client import DopraxClient
+
+DEFAULT_EXCLUDED_LOCATIONS = {"germany", "de", "france", "fr", "paris", "frankfurt", "berlin"}
+
+
+def _parse_excluded_locations() -> set[str]:
+    raw = os.getenv("PHOENIX_EXCLUDED_LOCATIONS", "")
+    if raw:
+        return {part.strip().lower() for part in raw.split(",") if part.strip()}
+    return DEFAULT_EXCLUDED_LOCATIONS
+
+
+def is_excluded_location(country: str = "", location_name: str = "") -> bool:
+    haystack = f"{country} {location_name}".lower()
+    return any(token in haystack for token in _parse_excluded_locations())
 
 
 @dataclass
@@ -15,11 +30,17 @@ class Node:
     ip: str = ""
     status: str = "unknown"
     traffic_used: float = 0.0
+    country: str = ""
+    location_name: str = ""
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     @property
     def node_id(self) -> str:
         return self.vm_code
+
+    @property
+    def is_excluded(self) -> bool:
+        return is_excluded_location(self.country, self.location_name)
 
 
 class NodeManager:
@@ -45,16 +66,23 @@ class NodeManager:
                     ip=ip,
                     status=vm.get("status", "unknown"),
                     traffic_used=float(vm.get("trafficUsed", 0) or 0),
+                    country=str(vm.get("country", "") or ""),
+                    location_name=str(vm.get("locationName", "") or ""),
                     metadata=vm,
                 )
             )
         self._nodes = nodes
         return nodes
 
-    def list_nodes(self) -> List[Node]:
+    def list_nodes(self, *, include_excluded: bool = False) -> List[Node]:
         if not self._nodes:
-            return self.refresh()
-        return self._nodes
+            self.refresh()
+        if include_excluded:
+            return self._nodes
+        return [n for n in self._nodes if not n.is_excluded]
+
+    def list_all_nodes(self) -> List[Node]:
+        return self.list_nodes(include_excluded=True)
 
     def get_node(self, vm_code: str) -> Optional[Node]:
         for node in self.list_nodes():
@@ -63,7 +91,11 @@ class NodeManager:
         return None
 
     def select_best_node(self) -> Optional[Node]:
-        nodes = [n for n in self.list_nodes() if n.status in ("running", "active", "online", "unknown")]
+        nodes = [
+            n
+            for n in self.list_nodes()
+            if n.status in ("running", "active", "online", "unknown")
+        ]
         if not nodes:
             return None
         return min(nodes, key=lambda n: n.traffic_used)
@@ -77,11 +109,18 @@ class NodeManager:
 
     def provision_node(self, payload: Dict[str, Any]) -> Node:
         result = self.client.create_vm(payload)
-        vm_code = result.get("vmCode") or result.get("id") or result.get("code", "")
+        vm_code = (
+            result.get("vmCode")
+            or result.get("vm_code")
+            or (result.get("metadata") or {}).get("vm_code")
+            or result.get("service_id")
+            or result.get("id")
+            or result.get("code", "")
+        )
         node = Node(
             vm_code=vm_code,
-            name=result.get("sysName", vm_code),
-            ip=result.get("ip", ""),
+            name=result.get("name") or result.get("sysName", vm_code),
+            ip=result.get("ip") or result.get("ipv4", ""),
             status=result.get("status", "provisioning"),
             metadata=result,
         )

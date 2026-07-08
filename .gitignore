@@ -1,4 +1,6 @@
 .env
+.env.*
+!.env.example
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -10,6 +12,10 @@ build/
 .venv/
 venv/
 phoenix-output/
+secrets/
+*.key
+*.pem
+*.crt
 .cursor/
 *.log
 .DS_Store
