@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  xray:
+    image: teddysun/xray:latest
+    container_name: phoenix-xray
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./configs/xray:/etc/xray
+    command: run -c /etc/xray/config.json
+
+  hysteria:
+    image: tobyxdd/hysteria:latest
+    container_name: phoenix-hysteria
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./configs/hysteria:/etc/hysteria
+    command: server -c /etc/hysteria/config.yaml
+
+  shadowsocks:
+    image: shadowsocks/shadowsocks-libev:latest
+    container_name: phoenix-ss
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./configs/shadowsocks:/etc/shadowsocks
+    command: ss-server -c /etc/shadowsocks/config.json
+
+  wireguard:
+    image: linuxserver/wireguard:latest
+    container_name: phoenix-wg
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ./configs/wireguard:/config
+    ports:
+      - "51820:51820/udp"
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
