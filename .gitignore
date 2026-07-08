@@ -9,6 +9,7 @@ build/
 .mypy_cache/
 .venv/
 venv/
-phoenix-output/secrets/
+phoenix-output/
+.cursor/
 *.log
 .DS_Store
