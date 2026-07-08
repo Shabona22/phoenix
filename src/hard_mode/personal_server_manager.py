@@ -23,6 +23,8 @@ class PersonalServer:
     auth: str = "password"  # "password" | "key"
     protocols: List[str] = field(default_factory=lambda: ["ssh_tunnel"])
     trusted: bool = True
+    location: str = "unknown"
+    fixed_ip: bool = True
 
 
 class PersonalServerManager:

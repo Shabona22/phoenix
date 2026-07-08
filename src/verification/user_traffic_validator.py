@@ -50,6 +50,10 @@ class TrafficValidator:
                 continue
         return False
 
+    def is_connected(self) -> bool:
+        """Single-shot connectivity check used by enhanced auto-healer."""
+        return self._check()
+
     def _trigger_fallback(self) -> None:
         if not self.fallback.switch_protocol():
             if not self.fallback.switch_node():

@@ -11,6 +11,7 @@ from typing import Dict, Optional
 
 from obfuscation.content_simulator import ContentSimulator
 from offline.mesh_connector import MeshP2P
+from protocols.doh_tunnel import DoHTunnel
 from protocols.icmp_tunnel import ICMPTunnel
 from protocols.ssh_tunnel import SSHTunnel
 
@@ -41,6 +42,7 @@ class HardMode:
         return {
             "ssh_tunnel": SSHTunnel.available(),
             "icmp_tunnel": ICMPTunnel.available(),
+            "doh_tunnel": True,
             "content_simulator": True,
             "llm_defender": True,
             "mesh_p2p": True,
@@ -53,12 +55,14 @@ class HardMode:
         llm_classification: bool = False,
         tcp_blocked: bool = False,
         internet_down: bool = False,
+        all_protocols_blocked: bool = False,
     ) -> Dict[str, object]:
         conditions = NetworkConditions(
             dpi_blocking=dpi_blocking,
             llm_classification=llm_classification,
             tcp_blocked=tcp_blocked,
             internet_down=internet_down,
+            all_protocols_blocked=all_protocols_blocked,
         )
         return self.fallback.plan(conditions)
 

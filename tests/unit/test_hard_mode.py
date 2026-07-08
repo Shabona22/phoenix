@@ -95,6 +95,7 @@ def test_personal_server_manager_roundtrip(tmp_path):
 def test_emergency_fallback_decision_ladder():
     fb = EmergencyFallback()
     assert fb.plan(NetworkConditions(internet_down=True))["selected"] == "mesh_p2p"
+    assert fb.plan(NetworkConditions(all_protocols_blocked=True))["selected"] == "doh_tunnel"
     assert fb.plan(NetworkConditions(tcp_blocked=True))["selected"] == "icmp_tunnel"
     assert fb.plan(
         NetworkConditions(dpi_blocking=True, llm_classification=True)
@@ -102,6 +103,7 @@ def test_emergency_fallback_decision_ladder():
     assert fb.plan(NetworkConditions(dpi_blocking=True))["selected"] == "content_simulation"
     assert fb.plan(NetworkConditions())["selected"] == "standard_protocols"
     assert fb.escalate("ssh_tunnel") == "icmp_tunnel"
+    assert fb.escalate("doh_tunnel") == "mesh_p2p"
     assert fb.escalate("mesh_p2p") == "mesh_p2p"
 
 

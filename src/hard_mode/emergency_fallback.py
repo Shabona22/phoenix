@@ -12,6 +12,7 @@ class NetworkConditions:
     llm_classification: bool = False
     tcp_blocked: bool = False
     internet_down: bool = False
+    all_protocols_blocked: bool = False
 
 
 class EmergencyFallback:
@@ -22,6 +23,7 @@ class EmergencyFallback:
         "content_simulation",
         "ssh_tunnel",
         "icmp_tunnel",
+        "doh_tunnel",
         "mesh_p2p",
     ]
 
@@ -31,6 +33,8 @@ class EmergencyFallback:
 
         if conditions.internet_down:
             chosen, reason = "mesh_p2p", "no internet; exchange configs over LAN"
+        elif conditions.all_protocols_blocked:
+            chosen, reason = "doh_tunnel", "all VPN protocols blocked; use DNS-over-HTTPS"
         elif conditions.tcp_blocked:
             chosen, reason = "icmp_tunnel", "TCP blocked; fall back to ICMP"
         elif conditions.dpi_blocking and conditions.llm_classification:
