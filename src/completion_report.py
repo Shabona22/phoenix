@@ -17,7 +17,7 @@ def _run_pytest() -> Dict[str, str]:
             capture_output=True,
             text=True,
             timeout=120,
-            cwd=Path(__file__).resolve().parent.parent.parent,
+            cwd=Path(__file__).resolve().parent.parent,
         )
         return {"exit_code": str(result.returncode), "output": result.stdout + result.stderr}
     except Exception as exc:
