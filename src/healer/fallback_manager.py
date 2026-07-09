@@ -9,10 +9,12 @@ from orchestrator.node_manager import Node, NodeManager
 
 class FallbackManager:
     PROTOCOL_CHAIN = ["xray", "shadowsocks", "hysteria", "wireguard", "openvpn", "l2tp"]
+    CHANNEL_CHAIN = ["standard", "ssh_tunnel", "icmp_tunnel", "doh_tunnel", "mesh_p2p"]
 
     def __init__(self, node_manager: NodeManager):
         self.node_manager = node_manager
         self._protocol_index = 0
+        self._channel_index = 0
         self.emergency = False
 
     @property
@@ -29,6 +31,16 @@ class FallbackManager:
         node = self.node_manager.switch_node()
         return node is not None
 
+    @property
+    def current_channel(self) -> str:
+        return self.CHANNEL_CHAIN[self._channel_index]
+
+    def switch_channel(self) -> bool:
+        if self._channel_index < len(self.CHANNEL_CHAIN) - 1:
+            self._channel_index += 1
+            return True
+        return False
+
     def emergency_mode(self) -> None:
         self.emergency = True
         self._protocol_index = 0
@@ -36,6 +48,7 @@ class FallbackManager:
     def reset(self) -> None:
         self.emergency = False
         self._protocol_index = 0
+        self._channel_index = 0
 
     def get_active_node(self) -> Optional[Node]:
         return self.node_manager.select_best_node()

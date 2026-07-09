@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ filename }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>{{ protocol }} / {{ filename }}</h2>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('download_config', filepath=path) }}" class="btn btn-success btn-sm">دانلود</a>
+        <a href="{{ url_for('how_to') }}" class="btn btn-outline-info btn-sm">راهنما</a>
+        <a href="/" class="btn btn-outline-secondary btn-sm">بازگشت</a>
+    </div>
+</div>
+<p class="text-muted"><code>{{ path }}</code></p>
+<pre class="config-full">{{ content }}</pre>
+<div class="alert alert-info mt-3">
+    برای نصب: فایل را در کلاینت مربوط به <strong>{{ protocol }}</strong> import کنید یا از QR در صفحه اصلی استفاده کنید.
+</div>
+{% endblock %}

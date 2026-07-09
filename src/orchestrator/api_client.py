@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 from typing import Any, Dict, List, Optional
 
 import requests
@@ -53,7 +54,8 @@ class DopraxClient:
             payload = {"raw": response.text}
 
         if response.status_code >= 400:
-            msg = payload.get("msg") or payload.get("message") or response.text
+            err = payload.get("error") or {}
+            msg = err.get("message") or payload.get("msg") or payload.get("message") or response.text
             raise DopraxAPIError(str(msg), response.status_code)
 
         return payload
@@ -67,7 +69,36 @@ class DopraxClient:
         return result.get("data", result)
 
     def create_vm(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        if payload.get("product_version_id"):
+            return self.create_vm_v2(payload)
         result = self._request("POST", "/api/v1/vms/", data=payload)
+        return result.get("data", result)
+
+    def get_catalogue(self, provider: Optional[str] = None) -> List[Dict[str, Any]]:
+        params = f"?provider={provider}" if provider else ""
+        result = self._request("GET", f"/api/v2/catalogue/service-catalogue/{params}")
+        return result.get("data", [])
+
+    def create_vm_v2(
+        self,
+        payload: Dict[str, Any],
+        *,
+        product_version_id: Optional[str] = None,
+        name: Optional[str] = None,
+        location_code: Optional[str] = None,
+        os_code: str = "ubuntu_22_04",
+    ) -> Dict[str, Any]:
+        body = dict(payload)
+        if product_version_id:
+            body["product_version_id"] = product_version_id
+        if name:
+            body["name"] = name
+        if location_code:
+            body.setdefault("selections", {})
+            body["selections"]["location"] = {"code": location_code}
+            body["selections"].setdefault("operating_system", {"code": os_code})
+        body.setdefault("idempotency_key", str(uuid.uuid4()))
+        result = self._request("POST", "/api/v2/services/instances/", data=body)
         return result.get("data", result)
 
     def delete_vm(self, vm_code: str) -> Dict[str, Any]:
@@ -104,6 +135,10 @@ class DopraxClient:
 
     def get_password(self, vm_code: str) -> Dict[str, Any]:
         result = self._request("GET", f"/api/v1/vms/{vm_code}/password/")
+        return result.get("data", result)
+
+    def get_vm_access(self, vm_code: str) -> Dict[str, Any]:
+        result = self._request("GET", f"/api/v2/vms/{vm_code}/actions/access/")
         return result.get("data", result)
 
     def list_providers(self) -> List[Dict[str, Any]]:

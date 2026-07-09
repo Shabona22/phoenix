@@ -39,6 +39,25 @@ def generate_wireguard_keypair() -> tuple[str, str]:
     return priv, pub
 
 
+def generate_x25519_reality_keypair() -> tuple[str, str]:
+    """Return (private_key, public_key) as base64url strings for Xray Reality."""
+    private_key = X25519PrivateKey.generate()
+    private_bytes = private_key.private_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PrivateFormat.Raw,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    public_bytes = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw,
+    )
+    import base64
+
+    priv = base64.urlsafe_b64encode(private_bytes).decode().rstrip("=")
+    pub = base64.urlsafe_b64encode(public_bytes).decode().rstrip("=")
+    return priv, pub
+
+
 def generate_uuid() -> str:
     import uuid
 

@@ -8,6 +8,8 @@ import zipfile
 from pathlib import Path
 from typing import Dict, Optional
 
+from orchestrator.config_generator import ConfigGenerator
+
 
 class BootstrapEmbedded:
     def __init__(self, output_dir: Optional[str] = None):
@@ -25,6 +27,15 @@ class BootstrapEmbedded:
         with zipfile.ZipFile(bundle_path, "w", zipfile.ZIP_DEFLATED) as zf:
             zf.writestr("manifest.json", json.dumps(manifest, indent=2))
             for proto, data in configs.items():
-                zf.writestr(f"configs/{proto}.json", json.dumps(data, indent=2))
+                if not isinstance(data, dict):
+                    continue
+                cfg = data.get("config", data)
+                zf.writestr(f"configs/{proto}/schema.json", json.dumps(cfg, indent=2))
+                if "client_config" in data:
+                    ext = "conf" if proto in ("openvpn", "wireguard") else "txt"
+                    zf.writestr(f"configs/{proto}/client.{ext}", data["client_config"])
+                if "server_config" in data:
+                    server_name, _ = ConfigGenerator.SERVER_FILES.get(proto, ("server.conf", "conf"))
+                    zf.writestr(f"configs/{proto}/{server_name}", data["server_config"])
 
         return bundle_path

@@ -27,10 +27,14 @@ def cmd_status(args: argparse.Namespace) -> int:
     try:
         client = DopraxClient()
         mgr = NodeManager(client)
-        nodes = mgr.refresh()
-        log.info(f"Found {len(nodes)} nodes")
+        nodes = mgr.list_all_nodes()
+        log.info(f"Found {len(nodes)} nodes ({len(mgr.list_nodes())} active, excluding DE/FR)")
         for node in nodes:
-            print(f"  {node.name} ({node.vm_code}) ip={node.ip} status={node.status}")
+            flag = " [EXCLUDED]" if node.is_excluded else ""
+            print(
+                f"  {node.name} ({node.vm_code}) ip={node.ip} "
+                f"loc={node.country}/{node.location_name} status={node.status}{flag}"
+            )
         return 0
     except DopraxAPIError as exc:
         log.error(str(exc))
@@ -40,9 +44,10 @@ def cmd_status(args: argparse.Namespace) -> int:
 def cmd_generate(args: argparse.Namespace) -> int:
     log = LogManager()
     mgr = NodeManager()
-    nodes = mgr.refresh()
+    mgr.refresh()
+    nodes = mgr.list_nodes()
     if not nodes:
-        log.error("No nodes found")
+        log.error("No eligible nodes found (Germany/France excluded)")
         return 1
 
     gen = ConfigGenerator()
@@ -66,19 +71,26 @@ def cmd_provision(args: argparse.Namespace) -> int:
     client = DopraxClient()
     mgr = NodeManager(client)
 
+    if not args.product_version_id:
+        log.error("product_version_id is required (use Doprax catalogue)")
+        return 1
+    if not args.location:
+        log.error("location code is required (e.g. gcore_50, vultr_waw)")
+        return 1
+
     payload = {
+        "product_version_id": args.product_version_id,
         "name": args.name,
-        "provider": args.provider,
-        "location": args.location,
-        "plan": args.plan,
-        "os": args.os,
+        "selections": {
+            "location": {"code": args.location},
+            "operating_system": {"code": args.os},
+        },
     }
-    payload = {k: v for k, v in payload.items() if v}
 
     try:
-        node = mgr.provision_node(payload)
-        log.info(f"Provisioned node {node.vm_code} status={node.status}")
-        print(json.dumps({"vm_code": node.vm_code, "status": node.status}, indent=2))
+        result = mgr.provision_node(payload)
+        log.info(f"Provisioned service status={result.status} vm_code={result.vm_code or 'pending'}")
+        print(json.dumps({"vm_code": result.vm_code, "status": result.status, "service": result.metadata}, indent=2))
         return 0
     except DopraxAPIError as exc:
         log.error(f"Provision failed: {exc}")
@@ -88,9 +100,10 @@ def cmd_provision(args: argparse.Namespace) -> int:
 def cmd_deploy(args: argparse.Namespace) -> int:
     log = LogManager()
     mgr = NodeManager()
-    nodes = mgr.refresh()
+    mgr.refresh()
+    nodes = mgr.list_nodes()
     if not nodes:
-        log.error("No nodes to deploy")
+        log.error("No eligible nodes to deploy (Germany/France excluded)")
         return 1
 
     gen = ConfigGenerator()
@@ -135,12 +148,11 @@ def main() -> int:
     sub.add_parser("status", help="List Doprax VMs").set_defaults(func=cmd_status)
     sub.add_parser("generate", help="Generate configs for all nodes").set_defaults(func=cmd_generate)
 
-    p_prov = sub.add_parser("provision", help="Provision new VM via Doprax API")
+    p_prov = sub.add_parser("provision", help="Provision new VM via Doprax v2 API")
     p_prov.add_argument("--name", default="phoenix-node")
-    p_prov.add_argument("--provider", default="")
-    p_prov.add_argument("--location", default="")
-    p_prov.add_argument("--plan", default="")
-    p_prov.add_argument("--os", default="ubuntu-22.04")
+    p_prov.add_argument("--product-version-id", dest="product_version_id", required=False)
+    p_prov.add_argument("--location", default="", help="Location code from catalogue")
+    p_prov.add_argument("--os", default="ubuntu_22_04")
     p_prov.set_defaults(func=cmd_provision)
 
     sub.add_parser("deploy", help="Prepare deploy bundles").set_defaults(func=cmd_deploy)

@@ -7,8 +7,9 @@ services:
     restart: unless-stopped
     network_mode: host
     volumes:
-      - ./configs/xray:/etc/xray
-    command: run -c /etc/xray/config.json
+      - /opt/phoenix/configs/xray:/etc/xray:ro
+    entrypoint: ["/usr/bin/xray"]
+    command: ["-c", "/etc/xray/config.json"]
 
   hysteria:
     image: tobyxdd/hysteria:latest
@@ -16,8 +17,10 @@ services:
     restart: unless-stopped
     network_mode: host
     volumes:
-      - ./configs/hysteria:/etc/hysteria
-    command: server -c /etc/hysteria/config.yaml
+      - /opt/phoenix/configs/hysteria:/etc/hysteria:ro
+      - /opt/phoenix/certs:/opt/phoenix/certs:ro
+    entrypoint: ["hysteria"]
+    command: ["server", "-c", "/etc/hysteria/config.yaml"]
 
   shadowsocks:
     image: shadowsocks/shadowsocks-libev:latest
@@ -25,7 +28,7 @@ services:
     restart: unless-stopped
     network_mode: host
     volumes:
-      - ./configs/shadowsocks:/etc/shadowsocks
+      - /opt/phoenix/configs/shadowsocks:/etc/shadowsocks:ro
     command: ss-server -c /etc/shadowsocks/config.json
 
   wireguard:
@@ -36,11 +39,8 @@ services:
       - NET_ADMIN
       - SYS_MODULE
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=0
+      - PGID=0
     volumes:
-      - ./configs/wireguard:/config
-    ports:
-      - "51820:51820/udp"
-    sysctls:
-      - net.ipv4.conf.all.src_valid_mark=1
+      - /opt/phoenix/configs/wireguard:/config
+    network_mode: host

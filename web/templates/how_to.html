@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}راهنمای نصب{% endblock %}
+{% block content %}
+<h2>راهنمای نصب کلاینت‌ها</h2>
+<div class="accordion mt-4" id="howToAccordion">
+    <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#xray">Xray / VLESS</button></h2>
+        <div id="xray" class="accordion-collapse collapse show" data-bs-parent="#howToAccordion">
+            <div class="accordion-body">لینک vless را از subscription کپی کنید و در v2rayNG یا Nekoray import کنید.</div>
+        </div>
+    </div>
+    <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#wg">WireGuard</button></h2>
+        <div id="wg" class="accordion-collapse collapse" data-bs-parent="#howToAccordion">
+            <div class="accordion-body">فایل <code>client.conf</code> را در WireGuard Android/iOS/Desktop import کنید.</div>
+        </div>
+    </div>
+    <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#ovpn">OpenVPN</button></h2>
+        <div id="ovpn" class="accordion-collapse collapse" data-bs-parent="#howToAccordion">
+            <div class="accordion-body">فایل <code>client.conf</code> را در OpenVPN Connect باز کنید. در صورت فیلتر، از obfs4 روی پورت 1080 استفاده کنید.</div>
+        </div>
+    </div>
+    <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#sub">Subscription</button></h2>
+        <div id="sub" class="accordion-collapse collapse" data-bs-parent="#howToAccordion">
+            <div class="accordion-body">از منوی «اشتراک» لینک base64 را کپی و در کلاینت‌های پشتیبان subscription وارد کنید.</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
