@@ -26,6 +26,10 @@ class FilteringDetector:
             signals.append("connection_failures")
         if reset_rate >= self.THRESHOLDS["reset_rate"]:
             signals.append("tcp_resets")
+        if metrics.get("degradation_rate", 0) >= 0.25:
+            signals.append("dbf_degradation")
+        if metrics.get("jitter_ms", 0) >= 80:
+            signals.append("dbf_jitter")
 
         severity = "none"
         if len(signals) >= 2:
@@ -42,7 +46,7 @@ class FilteringDetector:
 
     def _recommend(self, severity: str) -> str:
         if severity == "high":
-            return "switch_protocol_and_enable_obfuscation"
+            return "switch_to_no_tls_protocols"
         if severity == "medium":
             return "enable_content_simulation"
         return "continue"

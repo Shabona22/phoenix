@@ -22,6 +22,36 @@ from orchestrator.subscription_manager import SubscriptionManager
 from utils.log_manager import LogManager
 
 
+def cmd_adapt(args: argparse.Namespace) -> int:
+    from monitoring.auto_adapt import AutoAdapt
+
+    log = LogManager()
+    mgr = NodeManager()
+    fallback = FallbackManager(mgr)
+    adapt = AutoAdapt(fallback, interval=args.interval)
+
+    if args.daemon:
+        adapt.start()
+        log.info(f"Auto-Adapt daemon started (interval={args.interval}s)")
+        try:
+            while True:
+                import time
+
+                time.sleep(3600)
+        except KeyboardInterrupt:
+            adapt.stop()
+            log.info("Auto-Adapt stopped")
+        return 0
+
+    status = adapt.run_once()
+    print(json.dumps(status, indent=2))
+    log.info(
+        f"level={status.get('level')} recommendation={status.get('recommendation')} "
+        f"protocol={fallback.current_protocol}"
+    )
+    return 0
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     log = LogManager()
     try:
@@ -121,6 +151,39 @@ def cmd_deploy(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_mikrotik(args: argparse.Namespace) -> int:
+    from mikrotik.advanced_config_generator import MikroTikConfigGenerator
+    from mikrotik_deployment_report import generate_report
+
+    log = LogManager()
+    if args.report:
+        path = generate_report()
+        print(path)
+        log.info(f"MikroTik report: {path}")
+        return 0
+
+    if args.deploy_ssh:
+        if not args.ip:
+            print("ERROR: --ip required for --ssh deploy")
+            return 1
+        import subprocess
+
+        root = Path(__file__).resolve().parent.parent
+        cmd = [str(root / "deploy" / "mikrotik_deploy.sh"), "--ip", args.ip]
+        if args.user:
+            cmd.extend(["--user", args.user])
+        if args.password:
+            cmd.extend(["--password", args.password])
+        result = subprocess.run(cmd, cwd=root)
+        return result.returncode
+
+    generator = MikroTikConfigGenerator()
+    scripts = generator.generate_all_scripts()
+    print(json.dumps(list(scripts.keys()), indent=2))
+    log.info(f"Generated {len(scripts)} MikroTik scripts")
+    return 0
+
+
 def cmd_heal(args: argparse.Namespace) -> int:
     log = LogManager()
     mgr = NodeManager()
@@ -157,6 +220,29 @@ def main() -> int:
 
     sub.add_parser("deploy", help="Prepare deploy bundles").set_defaults(func=cmd_deploy)
     sub.add_parser("heal", help="Run healing check").set_defaults(func=cmd_heal)
+
+    p_adapt = sub.add_parser("adapt", help="Run Auto-Adapt monitoring loop")
+    p_adapt.add_argument("--once", action="store_true", help="Run one adaptation cycle")
+    p_adapt.add_argument("--daemon", action="store_true", help="Run continuous adaptation")
+    p_adapt.add_argument("--interval", type=int, default=60, help="Seconds between cycles")
+    p_adapt.set_defaults(func=cmd_adapt)
+
+    p_mikrotik = sub.add_parser("mikrotik", help="MikroTik hap ax3 scripts and deploy")
+    p_mikrotik.add_argument("action", nargs="?", default="generate", choices=["generate", "deploy", "report"])
+    p_mikrotik.add_argument("--ssh", dest="deploy_ssh", action="store_true", help="Deploy via SSH")
+    p_mikrotik.add_argument("--ip", default="", help="MikroTik IP")
+    p_mikrotik.add_argument("--user", default="admin", help="SSH/API username")
+    p_mikrotik.add_argument("--password", default="", help="SSH/API password")
+    p_mikrotik.add_argument("--report", action="store_true", help="Generate HTML report")
+
+    def _mikrotik_dispatch(args: argparse.Namespace) -> int:
+        if args.action == "report" or args.report:
+            args.report = True
+        if args.action == "deploy":
+            args.deploy_ssh = True
+        return cmd_mikrotik(args)
+
+    p_mikrotik.set_defaults(func=_mikrotik_dispatch)
 
     args = parser.parse_args()
     if not args.command:

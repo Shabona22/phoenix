@@ -20,9 +20,15 @@ def test_fallback_protocol_chain():
     mgr = _make_manager_with_nodes()
     mgr.refresh()
     fb = FallbackManager(mgr)
-    assert fb.current_protocol == "xray"
+    assert fb.current_protocol == "openvpn_http2"
     assert fb.switch_protocol() is True
-    assert fb.current_protocol == "shadowsocks"
+    assert fb.current_protocol == "l2tp_websocket"
+
+
+def test_fallback_legacy_mode():
+    mgr = _make_manager_with_nodes()
+    fb = FallbackManager(mgr, dbf_mode=False)
+    assert fb.current_protocol == "xray"
 
 
 def test_fallback_node_switch():

@@ -7,12 +7,13 @@ from ai.feedback_loop import FeedbackLoop
 from ai.filtering_detector import FilteringDetector
 
 
-def test_filtering_detector_high_severity():
+def test_filtering_detector_dbf_signals():
     detector = FilteringDetector()
-    result = detector.analyze({"latency_ms": 1200, "failure_rate": 0.6, "reset_rate": 0.5})
-    assert result["filtered"] is True
-    assert result["severity"] == "high"
-    assert result["recommended_action"] == "switch_protocol_and_enable_obfuscation"
+    result = detector.analyze(
+        {"latency_ms": 900, "failure_rate": 0.5, "reset_rate": 0.4, "degradation_rate": 0.3}
+    )
+    assert "dbf_degradation" in result["signals"]
+    assert result["recommended_action"] == "switch_to_no_tls_protocols"
 
 
 def test_filtering_detector_none():

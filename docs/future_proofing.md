@@ -1,15 +1,19 @@
 # Future Proofing
 
-## Protocol Fallback Chain
+## Protocol Fallback Chain (DBF Ready)
 
-Phoenix V10 uses an ordered fallback chain:
+Phoenix V10 uses a DBF-aware fallback chain:
 
-1. Xray (VLESS/Reality) – best DPI resistance
-2. Shadowsocks (AEAD) – lightweight, widely supported
-3. Hysteria (QUIC) – UDP with obfuscation
-4. WireGuard – modern, fast
-5. OpenVPN (obfs4) – maximum compatibility
-6. L2TP/IPSec – legacy device support
+1. WebSocket plain (no TLS) – highest DBF stability
+2. TCP plain (no TLS)
+3. HTTP Upgrade (no TLS)
+4. OpenVPN + Cloak
+5. WireGuard + AmneziaWG
+6. L2TP + Xray reverse tunnel
+7. Xray Reality
+8. Shadowsocks / Hysteria / Xray / WireGuard / OpenVPN / L2TP (legacy)
+
+Set `FallbackManager(dbf_mode=False)` to use the legacy chain.
 
 ## Obfuscation Strategy
 
