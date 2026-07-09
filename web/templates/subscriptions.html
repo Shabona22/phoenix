@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}لینک‌های اشتراک{% endblock %}
+{% block content %}
+<h2>لینک‌های اشتراک (Subscription)</h2>
+<p>این لینک‌ها را در کلاینت‌ها وارد کنید تا کانفیگ‌ها به‌صورت خودکار دریافت شوند.</p>
+{% if not subscriptions %}
+<div class="alert alert-warning">فایل subscription یافت نشد. <code>python3 src/main.py generate</code> را اجرا کنید.</div>
+{% endif %}
+{% for sub in subscriptions %}
+<div class="card mt-3">
+    <div class="card-header"><strong>{{ sub.name }}</strong></div>
+    <div class="card-body">
+        <pre class="sub-box">{{ sub.content }}</pre>
+        <button type="button" class="btn btn-sm btn-primary" data-copy-text="{{ sub.content|e }}">کپی همه</button>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('[data-copy-text]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        navigator.clipboard.writeText(btn.dataset.copyText).then(() => alert('کپی شد'));
+    });
+});
+</script>
+{% endblock %}

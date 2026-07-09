@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}لیست کانفیگ‌ها{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>کانفیگ‌های موجود</h2>
+            <span class="badge bg-primary">{{ total }} کانفیگ</span>
+        </div>
+        {% if not nodes %}
+        <div class="alert alert-warning">هیچ کانفیگی یافت نشد. ابتدا <code>python3 src/main.py generate</code> را اجرا کنید.</div>
+        {% endif %}
+        <div class="row">
+            {% for node in nodes %}
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span class="badge bg-success">{{ node.protocol }}</span>
+                        <small class="text-muted">{{ node.id[:8] }}...</small>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>فایل:</strong> {{ node.filename }}</p>
+                        <pre class="preview-box">{{ node.preview }}</pre>
+                    </div>
+                    <div class="card-footer d-flex gap-2 flex-wrap">
+                        <a href="{{ url_for('view_config', filepath=node.path) }}" class="btn btn-sm btn-outline-primary">نمایش</a>
+                        <a href="{{ url_for('download_config', filepath=node.path) }}" class="btn btn-sm btn-outline-success">دانلود</a>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-copy-path="{{ node.path }}">کپی</button>
+                        <button type="button" class="btn btn-sm btn-outline-info" data-qr-content="{{ node.content|e }}">QR</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="qrModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">QR Code</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="qrImage" src="" class="img-fluid" alt="QR Code">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('[data-copy-path]').forEach(btn => {
+    btn.addEventListener('click', () => copyConfig(btn.dataset.copyPath));
+});
+document.querySelectorAll('[data-qr-content]').forEach(btn => {
+    btn.addEventListener('click', () => showQR(btn.dataset.qrContent));
+});
+</script>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}پنل مدیریت{% endblock %}
+{% block content %}
+<h2>پنل مدیریت</h2>
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3>{{ stats.total_configs }}</h3>
+                <p class="text-muted">کانفیگ‌ها</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3>{{ stats.total_nodes }}</h3>
+                <p class="text-muted">نودها</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3>{{ stats.protocols|length }}</h3>
+                <p class="text-muted">پروتکل‌ها</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6>{{ stats.last_update }}</h6>
+                <p class="text-muted">آخرین بروزرسانی</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">پروتکل‌ها</div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for p in stats.protocols %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ p.name }}</span>
+                        <span class="badge bg-primary">{{ p.nodes }} نود</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">لاگ‌های اخیر</div>
+            <div class="card-body log-box">
+                {% if logs %}
+                    {% for log in logs %}
+                    <div class="log-line">{{ log }}</div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">هیچ لاگی موجود نیست</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
